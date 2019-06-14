@@ -3,7 +3,7 @@ use yew::prelude::*;
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
-struct RawAndParsed<T>
+pub struct RawAndParsed<T>
     where
         T: std::str::FromStr,
 {
@@ -145,6 +145,7 @@ pub struct TypedInput<T>
     storage: Rc<RefCell<TypedInputStorage<T>>>,
     placeholder: String,
     on_send_valid: Option<Callback<T>>,
+    on_input: Option<Callback<RawAndParsed<T>>>,
 }
 
 pub enum Msg {
@@ -164,6 +165,8 @@ pub struct Props<T>
     pub placeholder: String,
     /// Called when the user wants to send a valid value
     pub on_send_valid: Option<Callback<T>>,
+    /// Called whenever the user changes the value
+    pub on_input: Option<Callback<RawAndParsed<T>>>,
 }
 
 impl<T> Default for Props<T>
@@ -175,6 +178,7 @@ impl<T> Default for Props<T>
             storage: Rc::new(RefCell::new(TypedInputStorage::empty())),
             placeholder: "".to_string(),
             on_send_valid: None,
+            on_input: None,
         }
     }
 }
@@ -207,6 +211,7 @@ impl<T> Component for TypedInput<T>
             storage: props.storage,
             placeholder: props.placeholder,
             on_send_valid: props.on_send_valid,
+            on_input: props.on_input,
         }
     }
 
@@ -221,11 +226,25 @@ impl<T> Component for TypedInput<T>
     fn update(&mut self, msg: Self::Message) -> ShouldRender {
         match msg {
             Msg::NewValue(raw_value) => {
+                let raw_value2 = raw_value.clone();
                 self.raw_value_copy = raw_value.clone();
                 let parsed = raw_value.parse();
-                let mut stor = self.storage.borrow_mut();
-                stor.raw_and_parsed.raw_value = raw_value;
-                stor.raw_and_parsed.parsed = parsed;
+                {
+                    let mut stor = self.storage.borrow_mut();
+                    stor.raw_and_parsed.raw_value = raw_value;
+                    stor.raw_and_parsed.parsed = parsed;
+                }
+
+                if let Some(ref mut callback) = self.on_input {
+                    let parsed2 = raw_value2.parse();
+                    let stor2 = RawAndParsed {
+                        raw_value: raw_value2,
+                        parsed: parsed2,
+                    };
+
+                    callback.emit(stor2);
+                }
+
             }
             Msg::OnFocus => {
                 let stor = self.storage.borrow_mut();
