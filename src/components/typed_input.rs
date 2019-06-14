@@ -123,6 +123,10 @@ impl<T> TypedInputStorage<T>
     // {
     //     self.raw_and_parsed = raw_and_parsed;
     // }
+
+    pub fn parsed(&self) -> &Result<T, <T as std::str::FromStr>::Err> {
+        &self.raw_and_parsed.parsed
+    }
 }
 
 #[derive(PartialEq, Clone, Copy, Debug)]
