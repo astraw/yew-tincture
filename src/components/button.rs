@@ -65,14 +65,13 @@ impl Component for Button {
 
 impl Renderable<Button> for Button {
     fn view(&self) -> Html<Self> {
-        if self.is_active {
-            html! {
-                <button class=("btn","btn-active"), onclick=|_| Msg::Clicked, disabled=self.disabled,>{ &self.title }</button>
-            }
+        let active_class = if self.is_active {
+            "btn-active"
         } else {
-            html! {
-                <button class=("btn","btn-inactive"), onclick=|_| Msg::Clicked, disabled=self.disabled,>{ &self.title }</button>
-            }
+            "btn-inactive"
+        };
+        html! {
+            <button class=("btn",{active_class}), onclick=|_| Msg::Clicked, disabled=self.disabled,>{ &self.title }</button>
         }
     }
 }
