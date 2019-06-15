@@ -32,6 +32,19 @@ impl<T> RawAndParsed<T>
         }
     }
 
+    /// Create a RawAndParsed with a good value.
+    fn from_initial(value: T) -> Self
+        where
+            T: std::fmt::Display,
+    {
+        let raw_value = format!("{}", value);
+        let parsed = Ok(value);
+        Self {
+            raw_value,
+            parsed,
+        }
+    }
+
 }
 
 fn new_focus_state() -> Rc<Cell<FocusState>> {
@@ -58,8 +71,24 @@ impl<T> TypedInputStorage<T>
         where
             T: std::fmt::Display,
     {
+        Self::create(RawAndParsed::empty())
+    }
+
+    /// Create a TypedInputStorage with an empty value.
+    pub fn from_initial(value: T) -> Self
+        where
+            T: std::fmt::Display,
+    {
+        Self::create(RawAndParsed::from_initial(value))
+    }
+
+    /// Create a TypedInputStorage with an empty value.
+    fn create(raw_and_parsed: RawAndParsed<T>) -> Self
+        where
+            T: std::fmt::Display,
+    {
         let inner = TypedInputStorageInner {
-            raw_and_parsed: RawAndParsed::empty(),
+            raw_and_parsed,
             focus_state: new_focus_state(),
         };
         let me = Rc::new(RefCell::new(inner));
