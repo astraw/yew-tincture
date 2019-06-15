@@ -1,5 +1,3 @@
-// TODO: Make trait bound on parsed so that it is clone and do not re-parse.
-
 use yew::prelude::*;
 
 use std::str::FromStr;
@@ -38,11 +36,12 @@ fn new_focus_state() -> Rc<Cell<FocusState>> {
 }
 
 #[derive(PartialEq,Clone)]
-pub struct TypedInputStorage<T: FromStr> ( Rc<RefCell<TypedInputStorageInner<T>>> );
+pub struct TypedInputStorage<T: FromStr + Clone> ( Rc<RefCell<TypedInputStorageInner<T>>> );
 
 impl<T> TypedInputStorage<T>
     where
-        T: FromStr,
+        T: FromStr + Clone,
+        Result<T, <T as FromStr>::Err> : Clone,
 {
     /// Create a TypedInputStorage with an empty value.
     pub fn empty() -> Self
@@ -58,7 +57,7 @@ impl<T> TypedInputStorage<T>
     }
 
     pub fn parsed(&self) -> Result<T, <T as FromStr>::Err> {
-        self.0.borrow().raw_and_parsed.raw_value.parse()
+        self.0.borrow().raw_and_parsed.parsed.clone()
     }
 
     /// Update the value if the user is not editing it.
@@ -86,7 +85,7 @@ impl<T> TypedInputStorage<T>
 
 struct TypedInputStorageInner<T>
     where
-        T: FromStr,
+        T: FromStr + Clone,
 {
     raw_and_parsed: RawAndParsed<T>,
     // TODO: does this need to be Rc<Cell<_>> or can I make it &'a _?
@@ -95,7 +94,7 @@ struct TypedInputStorageInner<T>
 
 impl<T> PartialEq for TypedInputStorageInner<T>
     where
-        T: FromStr,
+        T: FromStr + Clone,
 {
     fn eq(&self, rhs: &Self) -> bool {
         // I am not sure when yew uses this. Here is my
@@ -107,7 +106,7 @@ impl<T> PartialEq for TypedInputStorageInner<T>
 
 impl<T> TypedInputStorageInner<T>
     where
-        T: FromStr,
+        T: FromStr + Clone,
 {
     // /// Create a TypedInputStorageInner with a specific value.
     // ///
@@ -170,7 +169,7 @@ impl Default for FocusState {
 
 pub struct TypedInput<T>
     where
-        T: FromStr,
+        T: FromStr + Clone,
 {
     raw_value_copy: String, // TODO: can we remove this and just use storage?
     storage: TypedInputStorage<T>,
@@ -190,7 +189,7 @@ pub enum Msg {
 #[derive(PartialEq, Clone)]
 pub struct Props<T>
     where
-        T: FromStr,
+        T: FromStr + Clone,
 {
     pub storage: TypedInputStorage<T>,
     pub placeholder: String,
@@ -202,7 +201,8 @@ pub struct Props<T>
 
 impl<T> Default for Props<T>
     where
-        T: FromStr + std::fmt::Display,
+        T: FromStr + Clone + std::fmt::Display,
+        <T as FromStr>::Err: Clone,
 {
     fn default() -> Self {
         Props {
@@ -216,7 +216,7 @@ impl<T> Default for Props<T>
 
 impl<T> TypedInput<T>
     where
-        T: FromStr + Clone,
+        T: FromStr + Clone + Clone,
 {
     fn send_value_if_valid(&mut self) {
         if let Some(ref mut callback) = self.on_send_valid {
@@ -230,6 +230,7 @@ impl<T> TypedInput<T>
 impl<T> Component for TypedInput<T>
     where
         T: 'static + Clone + PartialEq + FromStr + std::fmt::Display,
+        <T as FromStr>::Err: Clone,
         Result<T, <T as FromStr>::Err>: Clone,
 {
     type Message = Msg;
@@ -260,6 +261,7 @@ impl<T> Component for TypedInput<T>
                 let raw_value2 = raw_value.clone();
                 self.raw_value_copy = raw_value.clone();
                 let parsed = raw_value.parse();
+                let parsed2 = parsed.clone();
                 {
                     let mut stor = self.storage.0.borrow_mut();
                     stor.raw_and_parsed.raw_value = raw_value;
@@ -267,7 +269,6 @@ impl<T> Component for TypedInput<T>
                 }
 
                 if let Some(ref mut callback) = self.on_input {
-                    let parsed2 = raw_value2.parse();
                     let stor2 = RawAndParsed {
                         raw_value: raw_value2,
                         parsed: parsed2,
@@ -305,10 +306,10 @@ impl<T> Component for TypedInput<T>
 impl<T> Renderable<TypedInput<T>> for TypedInput<T>
     where
         T: 'static + Clone + PartialEq + FromStr + std::fmt::Display,
+        <T as FromStr>::Err: Clone,
         Result<T, <T as FromStr>::Err>: Clone,
 {
     fn view(&self) -> Html<Self> {
-        // let tmp: Result<T, <T as FromStr>::Err> = self.raw_and_parsed.raw_value.parse();
         let input_class = match &self.storage.0.borrow().raw_and_parsed.parsed {
             Ok(_) => "ranged-value-input",
             Err(_) => "ranged-value-input-error",
