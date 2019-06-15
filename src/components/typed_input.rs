@@ -1,3 +1,5 @@
+// TODO: Make trait bound on parsed so that it is clone and do not re-parse.
+
 use yew::prelude::*;
 
 use std::cell::{Cell, RefCell};
@@ -15,7 +17,7 @@ impl<T> RawAndParsed<T>
     where
         T: std::str::FromStr,
 {
-    /// Create a TypedInputStorage with empty value.
+    /// Create a RawAndParsed with empty value.
     fn empty() -> Self
         where
             T: std::fmt::Display,
@@ -34,7 +36,54 @@ fn new_focus_state() -> Rc<Cell<FocusState>> {
     Rc::new(Cell::new(FocusState::IsBlurred))
 }
 
-pub struct TypedInputStorage<T>
+#[derive(PartialEq,Clone)]
+pub struct TypedInputStorage<T: std::str::FromStr> ( Rc<RefCell<TypedInputStorageInner<T>>> );
+
+impl<T> TypedInputStorage<T>
+    where
+        T: std::str::FromStr,
+{
+    /// Create a TypedInputStorage with an empty value.
+    pub fn empty() -> Self
+        where
+            T: std::fmt::Display,
+    {
+        let inner = TypedInputStorageInner {
+            raw_and_parsed: RawAndParsed::empty(),
+            focus_state: new_focus_state(),
+        };
+        let me = Rc::new(RefCell::new(inner));
+        TypedInputStorage(me)
+    }
+
+    pub fn parsed(&self) -> Result<T, <T as std::str::FromStr>::Err> {
+        self.0.borrow().raw_and_parsed.raw_value.parse()
+    }
+
+    /// Update the value if the user is not editing it.
+    ///
+    /// See also the `set()` method.
+    pub fn set_if_not_focused(&mut self, value: T)
+        where
+            T: std::fmt::Display,
+    {
+        use std::ops::Deref;
+        {
+            let mut inner = self.0.borrow_mut();
+
+            match (*(inner.focus_state).deref()).get() {
+                FocusState::IsFocused => {}
+                FocusState::IsBlurred => {
+                    inner.raw_and_parsed.raw_value = format!("{}", value);
+                    inner.raw_and_parsed.parsed = Ok(value);
+                }
+            }
+        }
+    }
+
+}
+
+struct TypedInputStorageInner<T>
     where
         T: std::str::FromStr,
 {
@@ -43,7 +92,7 @@ pub struct TypedInputStorage<T>
     focus_state: Rc<Cell<FocusState>>,
 }
 
-impl<T> PartialEq for TypedInputStorage<T>
+impl<T> PartialEq for TypedInputStorageInner<T>
     where
         T: std::str::FromStr,
 {
@@ -55,11 +104,11 @@ impl<T> PartialEq for TypedInputStorage<T>
     }
 }
 
-impl<T> TypedInputStorage<T>
+impl<T> TypedInputStorageInner<T>
     where
         T: std::str::FromStr,
 {
-    // /// Create a TypedInputStorage with a specific value.
+    // /// Create a TypedInputStorageInner with a specific value.
     // ///
     // /// Note that it may be better to not specific an initial value. In that
     // /// case, use `empty()`.
@@ -74,16 +123,16 @@ impl<T> TypedInputStorage<T>
     //     }
     // }
 
-    /// Create a TypedInputStorage with an empty value.
-    pub fn empty() -> Self
-        where
-            T: std::fmt::Display,
-    {
-        Self {
-            raw_and_parsed: RawAndParsed::empty(),
-            focus_state: new_focus_state(),
-        }
-    }
+    // /// Create a TypedInputStorageInner with an empty value.
+    // pub fn empty() -> Self
+    //     where
+    //         T: std::fmt::Display,
+    // {
+    //     Self {
+    //         raw_and_parsed: RawAndParsed::empty(),
+    //         focus_state: new_focus_state(),
+    //     }
+    // }
 
     // pub fn from_str(orig: &str, focus_state: Rc<Cell<FocusState>>) -> Self {
     //     let raw_value = orig.to_string();
@@ -95,25 +144,6 @@ impl<T> TypedInputStorage<T>
     //     }
     // }
 
-    /// Update the value if the user is not editing it.
-    ///
-    /// See also the `set()` method.
-    pub fn set_if_not_focused(&mut self, value: T)
-        where
-            T: std::fmt::Display,
-    {
-        use std::ops::Deref;
-        {
-            match (*(self.focus_state).deref()).get() {
-                FocusState::IsFocused => {}
-                FocusState::IsBlurred => {
-                    self.raw_and_parsed.raw_value = format!("{}", value);
-                    self.raw_and_parsed.parsed = Ok(value);
-                }
-            }
-        }
-    }
-
     // /// Update the value
     // ///
     // /// See also the `set_if_not_focused()` method.
@@ -123,10 +153,6 @@ impl<T> TypedInputStorage<T>
     // {
     //     self.raw_and_parsed = raw_and_parsed;
     // }
-
-    pub fn parsed(&self) -> &Result<T, <T as std::str::FromStr>::Err> {
-        &self.raw_and_parsed.parsed
-    }
 }
 
 #[derive(PartialEq, Clone, Copy, Debug)]
@@ -146,7 +172,7 @@ pub struct TypedInput<T>
         T: std::str::FromStr,
 {
     raw_value_copy: String, // TODO: can we remove this and just use storage?
-    storage: Rc<RefCell<TypedInputStorage<T>>>,
+    storage: TypedInputStorage<T>,
     placeholder: String,
     on_send_valid: Option<Callback<T>>,
     on_input: Option<Callback<RawAndParsed<T>>>,
@@ -165,7 +191,7 @@ pub struct Props<T>
     where
         T: std::str::FromStr,
 {
-    pub storage: Rc<RefCell<TypedInputStorage<T>>>,
+    pub storage: TypedInputStorage<T>,
     pub placeholder: String,
     /// Called when the user wants to send a valid value
     pub on_send_valid: Option<Callback<T>>,
@@ -179,7 +205,7 @@ impl<T> Default for Props<T>
 {
     fn default() -> Self {
         Props {
-            storage: Rc::new(RefCell::new(TypedInputStorage::empty())),
+            storage: TypedInputStorage::empty(),
             placeholder: "".to_string(),
             on_send_valid: None,
             on_input: None,
@@ -193,7 +219,7 @@ impl<T> TypedInput<T>
 {
     fn send_value_if_valid(&mut self) {
         if let Some(ref mut callback) = self.on_send_valid {
-            if let Ok(value) = &self.storage.borrow().raw_and_parsed.parsed {
+            if let Ok(value) = &self.storage.0.borrow().raw_and_parsed.parsed {
                 callback.emit(value.clone());
             }
         }
@@ -209,7 +235,7 @@ impl<T> Component for TypedInput<T>
     type Properties = Props<T>;
 
     fn create(props: Self::Properties, _link: ComponentLink<Self>) -> Self {
-        let raw_value_copy = props.storage.borrow().raw_and_parsed.raw_value.clone();
+        let raw_value_copy = props.storage.0.borrow().raw_and_parsed.raw_value.clone();
         Self {
             raw_value_copy,
             storage: props.storage,
@@ -220,7 +246,7 @@ impl<T> Component for TypedInput<T>
     }
 
     fn change(&mut self, props: Self::Properties) -> ShouldRender {
-        self.raw_value_copy = props.storage.borrow().raw_and_parsed.raw_value.clone();
+        self.raw_value_copy = props.storage.0.borrow().raw_and_parsed.raw_value.clone();
         self.storage = props.storage;
         self.placeholder = props.placeholder;
         self.on_send_valid = props.on_send_valid;
@@ -234,7 +260,7 @@ impl<T> Component for TypedInput<T>
                 self.raw_value_copy = raw_value.clone();
                 let parsed = raw_value.parse();
                 {
-                    let mut stor = self.storage.borrow_mut();
+                    let mut stor = self.storage.0.borrow_mut();
                     stor.raw_and_parsed.raw_value = raw_value;
                     stor.raw_and_parsed.parsed = parsed;
                 }
@@ -251,13 +277,13 @@ impl<T> Component for TypedInput<T>
 
             }
             Msg::OnFocus => {
-                let stor = self.storage.borrow_mut();
+                let stor = self.storage.0.borrow_mut();
                 stor.focus_state.replace(FocusState::IsFocused);
                 return true;
             }
             Msg::OnBlur => {
                 {
-                    let stor = self.storage.borrow_mut();
+                    let stor = self.storage.0.borrow_mut();
                     stor.focus_state.replace(FocusState::IsBlurred);
                 }
                 self.send_value_if_valid();
@@ -282,7 +308,7 @@ impl<T> Renderable<TypedInput<T>> for TypedInput<T>
 {
     fn view(&self) -> Html<Self> {
         // let tmp: Result<T, <T as std::str::FromStr>::Err> = self.raw_and_parsed.raw_value.parse();
-        let input_class = match &self.storage.borrow().raw_and_parsed.parsed {
+        let input_class = match &self.storage.0.borrow().raw_and_parsed.parsed {
             Ok(_) => "ranged-value-input",
             Err(_) => "ranged-value-input-error",
         };
