@@ -2,20 +2,21 @@
 
 use yew::prelude::*;
 
+use std::str::FromStr;
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
 pub struct RawAndParsed<T>
     where
-        T: std::str::FromStr,
+        T: FromStr,
 {
     raw_value: String,
-    parsed: Result<T, <T as std::str::FromStr>::Err>,
+    parsed: Result<T, <T as FromStr>::Err>,
 }
 
 impl<T> RawAndParsed<T>
     where
-        T: std::str::FromStr,
+        T: FromStr,
 {
     /// Create a RawAndParsed with empty value.
     fn empty() -> Self
@@ -37,11 +38,11 @@ fn new_focus_state() -> Rc<Cell<FocusState>> {
 }
 
 #[derive(PartialEq,Clone)]
-pub struct TypedInputStorage<T: std::str::FromStr> ( Rc<RefCell<TypedInputStorageInner<T>>> );
+pub struct TypedInputStorage<T: FromStr> ( Rc<RefCell<TypedInputStorageInner<T>>> );
 
 impl<T> TypedInputStorage<T>
     where
-        T: std::str::FromStr,
+        T: FromStr,
 {
     /// Create a TypedInputStorage with an empty value.
     pub fn empty() -> Self
@@ -56,7 +57,7 @@ impl<T> TypedInputStorage<T>
         TypedInputStorage(me)
     }
 
-    pub fn parsed(&self) -> Result<T, <T as std::str::FromStr>::Err> {
+    pub fn parsed(&self) -> Result<T, <T as FromStr>::Err> {
         self.0.borrow().raw_and_parsed.raw_value.parse()
     }
 
@@ -85,7 +86,7 @@ impl<T> TypedInputStorage<T>
 
 struct TypedInputStorageInner<T>
     where
-        T: std::str::FromStr,
+        T: FromStr,
 {
     raw_and_parsed: RawAndParsed<T>,
     // TODO: does this need to be Rc<Cell<_>> or can I make it &'a _?
@@ -94,7 +95,7 @@ struct TypedInputStorageInner<T>
 
 impl<T> PartialEq for TypedInputStorageInner<T>
     where
-        T: std::str::FromStr,
+        T: FromStr,
 {
     fn eq(&self, rhs: &Self) -> bool {
         // I am not sure when yew uses this. Here is my
@@ -106,7 +107,7 @@ impl<T> PartialEq for TypedInputStorageInner<T>
 
 impl<T> TypedInputStorageInner<T>
     where
-        T: std::str::FromStr,
+        T: FromStr,
 {
     // /// Create a TypedInputStorageInner with a specific value.
     // ///
@@ -169,7 +170,7 @@ impl Default for FocusState {
 
 pub struct TypedInput<T>
     where
-        T: std::str::FromStr,
+        T: FromStr,
 {
     raw_value_copy: String, // TODO: can we remove this and just use storage?
     storage: TypedInputStorage<T>,
@@ -189,7 +190,7 @@ pub enum Msg {
 #[derive(PartialEq, Clone)]
 pub struct Props<T>
     where
-        T: std::str::FromStr,
+        T: FromStr,
 {
     pub storage: TypedInputStorage<T>,
     pub placeholder: String,
@@ -201,7 +202,7 @@ pub struct Props<T>
 
 impl<T> Default for Props<T>
     where
-        T: std::str::FromStr + std::fmt::Display,
+        T: FromStr + std::fmt::Display,
 {
     fn default() -> Self {
         Props {
@@ -215,7 +216,7 @@ impl<T> Default for Props<T>
 
 impl<T> TypedInput<T>
     where
-        T: std::str::FromStr + Clone,
+        T: FromStr + Clone,
 {
     fn send_value_if_valid(&mut self) {
         if let Some(ref mut callback) = self.on_send_valid {
@@ -228,8 +229,8 @@ impl<T> TypedInput<T>
 
 impl<T> Component for TypedInput<T>
     where
-        T: 'static + Clone + PartialEq + std::str::FromStr + std::fmt::Display,
-        Result<T, <T as std::str::FromStr>::Err>: Clone,
+        T: 'static + Clone + PartialEq + FromStr + std::fmt::Display,
+        Result<T, <T as FromStr>::Err>: Clone,
 {
     type Message = Msg;
     type Properties = Props<T>;
@@ -303,11 +304,11 @@ impl<T> Component for TypedInput<T>
 
 impl<T> Renderable<TypedInput<T>> for TypedInput<T>
     where
-        T: 'static + Clone + PartialEq + std::str::FromStr + std::fmt::Display,
-        Result<T, <T as std::str::FromStr>::Err>: Clone,
+        T: 'static + Clone + PartialEq + FromStr + std::fmt::Display,
+        Result<T, <T as FromStr>::Err>: Clone,
 {
     fn view(&self) -> Html<Self> {
-        // let tmp: Result<T, <T as std::str::FromStr>::Err> = self.raw_and_parsed.raw_value.parse();
+        // let tmp: Result<T, <T as FromStr>::Err> = self.raw_and_parsed.raw_value.parse();
         let input_class = match &self.storage.0.borrow().raw_and_parsed.parsed {
             Ok(_) => "ranged-value-input",
             Err(_) => "ranged-value-input-error",
