@@ -65,6 +65,9 @@ impl Renderable<CheckboxLabel> for CheckboxLabel {
         let new_value = !self.checked;
         // Hmm, putting this in one html!{} macro fails, so make a list
         // manually.
+
+        // Ideally, the structure would be <label><input /></label> but
+        // I could not get this to work, so we are using `css_id` here.
         let el1 = html! {
             <input
                 id=&self.css_id,
