@@ -145,58 +145,6 @@ impl<T> PartialEq for TypedInputStorageInner<T>
     }
 }
 
-impl<T> TypedInputStorageInner<T>
-    where
-        T: FromStr + Clone,
-        <T as FromStr>::Err: Clone,
-{
-    // /// Create a TypedInputStorageInner with a specific value.
-    // ///
-    // /// Note that it may be better to not specific an initial value. In that
-    // /// case, use `empty()`.
-    // pub fn new(value: T, focus_state: Rc<Cell<FocusState>>) -> Self
-    //     where
-    //         T: std::fmt::Display,
-    // {
-    //     Self {
-    //         raw_value: format!("{}", value),
-    //         parsed: Ok(value),
-    //         focus_state: focus_state,
-    //     }
-    // }
-
-    // /// Create a TypedInputStorageInner with an empty value.
-    // pub fn empty() -> Self
-    //     where
-    //         T: std::fmt::Display,
-    // {
-    //     Self {
-    //         raw_and_parsed: RawAndParsed::empty(),
-    //         focus_state: new_focus_state(),
-    //     }
-    // }
-
-    // pub fn from_str(orig: &str, focus_state: Rc<Cell<FocusState>>) -> Self {
-    //     let raw_value = orig.to_string();
-    //     let parsed = raw_value.parse();
-    //     Self {
-    //         raw_value,
-    //         parsed,
-    //         focus_state: focus_state,
-    //     }
-    // }
-
-    // /// Update the value
-    // ///
-    // /// See also the `set_if_not_focused()` method.
-    // pub fn set(&mut self, raw_and_parsed: RawAndParsed<T>)
-    //     where
-    //         T: std::fmt::Display,
-    // {
-    //     self.raw_and_parsed = raw_and_parsed;
-    // }
-}
-
 #[derive(PartialEq, Clone, Copy, Debug)]
 enum FocusState {
     IsFocused,
