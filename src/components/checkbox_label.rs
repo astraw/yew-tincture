@@ -51,7 +51,7 @@ impl Component for CheckboxLabel {
                 }
             }
         }
-        false
+        true
     }
 
     fn change(&mut self, props: Self::Properties) -> ShouldRender {
