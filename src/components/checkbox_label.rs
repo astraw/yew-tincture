@@ -8,7 +8,7 @@ pub struct CheckboxLabel {
 }
 
 pub enum Msg {
-    Checked(bool),
+    Toggle,
 }
 
 #[derive(PartialEq, Clone)]
@@ -43,7 +43,9 @@ impl Component for CheckboxLabel {
 
     fn update(&mut self, msg: Self::Message) -> ShouldRender {
         match msg {
-            Msg::Checked(checked) => {
+            Msg::Toggle => {
+                let checked = !self.checked;
+                self.checked = checked;
                 if let Some(ref mut callback) = self.oncheck {
                     callback.emit(checked);
                 }
@@ -62,7 +64,6 @@ impl Component for CheckboxLabel {
 
 impl Renderable<CheckboxLabel> for CheckboxLabel {
     fn view(&self) -> Html<Self> {
-        let new_value = !self.checked;
         // Hmm, putting this in one html!{} macro fails, so make a list
         // manually.
 
@@ -73,7 +74,7 @@ impl Renderable<CheckboxLabel> for CheckboxLabel {
                 id=&self.css_id,
                 type="checkbox",
                 checked=self.checked,
-                onchange=|_| Msg::Checked(new_value),
+                onclick=|_| Msg::Toggle,
                 />
         };
         let el2 = html! {
