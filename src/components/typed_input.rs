@@ -64,7 +64,7 @@ impl<T> TypedInputStorage<T>
     where
         T: FromStr + Clone,
         <T as FromStr>::Err: Clone,
-        Result<T, <T as FromStr>::Err> : Clone,
+        Result<T, <T as FromStr>::Err>: Clone,
 {
     /// Create a TypedInputStorage with an empty value.
     pub fn empty() -> Self
