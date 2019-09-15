@@ -11,21 +11,11 @@ pub enum Msg {
     Checked(bool),
 }
 
-#[derive(PartialEq, Clone)]
+#[derive(PartialEq, Clone, Properties)]
 pub struct Props {
     pub label: String,
     pub oncheck: Option<Callback<bool>>,
     pub checked: bool,
-}
-
-impl Default for Props {
-    fn default() -> Self {
-        Props {
-            label: "label".into(),
-            oncheck: None,
-            checked: false,
-        }
-    }
 }
 
 impl Component for CheckboxLabel {

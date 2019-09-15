@@ -5,5 +5,8 @@ authors = ["Andrew Straw <strawman@astraw.com>"]
 edition = "2018"
 
 [dependencies]
-yew = "0.7"
+yew = "0.9"
 uuid = { version = "0.7.2", features = ["v4","stdweb"] }
+
+[patch.crates-io]
+yew = {git="https://github.com/astraw/yew", rev="16c7864d631085bbc28fdd689b5da019a2d473eb"}
