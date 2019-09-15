@@ -15,7 +15,7 @@ pub enum Msg {
 pub struct Props {
     pub label: String,
     pub oncheck: Option<Callback<bool>>,
-    pub checked: bool,
+    pub initially_checked: bool,
 }
 
 impl Default for Props {
@@ -23,7 +23,7 @@ impl Default for Props {
         Props {
             label: "label".into(),
             oncheck: None,
-            checked: false,
+            initially_checked: false,
         }
     }
 }
@@ -37,7 +37,7 @@ impl Component for CheckboxLabel {
             css_id: uuid::Uuid::new_v4().to_string(),
             label: props.label,
             oncheck: props.oncheck,
-            checked: props.checked,
+            checked: props.initially_checked,
         }
     }
 
@@ -57,7 +57,7 @@ impl Component for CheckboxLabel {
     fn change(&mut self, props: Self::Properties) -> ShouldRender {
         self.label = props.label;
         self.oncheck = props.oncheck;
-        self.checked = props.checked;
+        // ignore initially_checked
         true
     }
 }
