@@ -2,7 +2,7 @@ use yew::prelude::*;
 
 pub struct Button {
     title: String,
-    onsignal: Option<Callback<()>>,
+    onsignal: Callback<()>,
     disabled: bool,
     is_active: bool,
 }
@@ -11,23 +11,14 @@ pub enum Msg {
     Clicked,
 }
 
-#[derive(PartialEq, Clone)]
+#[derive(PartialEq, Clone, Properties)]
 pub struct Props {
+    #[props(required)]
     pub title: String,
-    pub onsignal: Option<Callback<()>>,
+    #[props(required)]
+    pub onsignal: Callback<()>,
     pub disabled: bool,
     pub is_active: bool,
-}
-
-impl Default for Props {
-    fn default() -> Self {
-        Props {
-            title: "Send Signal".into(),
-            onsignal: None,
-            disabled: false,
-            is_active: false,
-        }
-    }
 }
 
 impl Component for Button {
@@ -46,9 +37,7 @@ impl Component for Button {
     fn update(&mut self, msg: Self::Message) -> ShouldRender {
         match msg {
             Msg::Clicked => {
-                if let Some(ref mut callback) = self.onsignal {
-                    callback.emit(());
-                }
+                self.onsignal.emit(());
             }
         }
         false

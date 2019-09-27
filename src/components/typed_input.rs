@@ -60,6 +60,16 @@ pub struct TypedInputStorage<T>
     rc: Rc<RefCell<TypedInputStorageInner<T>>>,
 }
 
+impl<T> Default for TypedInputStorage<T>
+    where
+        T: FromStr + Clone + std::fmt::Display,
+        <T as FromStr>::Err: Clone,
+{
+    fn default() -> Self {
+        TypedInputStorage::empty()
+    }
+}
+
 impl<T> TypedInputStorage<T>
     where
         T: FromStr + Clone,
@@ -177,33 +187,20 @@ pub enum Msg {
     Ignore,
 }
 
-#[derive(PartialEq, Clone)]
+#[derive(PartialEq, Clone, Properties)]
 pub struct Props<T>
     where
-        T: FromStr + Clone,
+        T: FromStr + Clone + std::fmt::Display,
         <T as FromStr>::Err: Clone,
 {
+    /// The backing store for the data.
     pub storage: TypedInputStorage<T>,
+    /// The placeholder text displayed when the input field is blank.
     pub placeholder: String,
     /// Called when the user wants to send a valid value
     pub on_send_valid: Option<Callback<T>>,
     /// Called whenever the user changes the value
     pub on_input: Option<Callback<RawAndParsed<T>>>,
-}
-
-impl<T> Default for Props<T>
-    where
-        T: FromStr + Clone + std::fmt::Display,
-        <T as FromStr>::Err: Clone,
-{
-    fn default() -> Self {
-        Props {
-            storage: TypedInputStorage::empty(),
-            placeholder: "".to_string(),
-            on_send_valid: None,
-            on_input: None,
-        }
-    }
 }
 
 impl<T> TypedInput<T>
