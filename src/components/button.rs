@@ -1,6 +1,7 @@
 use yew::prelude::*;
 
 pub struct Button {
+    link: ComponentLink<Self>,
     title: String,
     onsignal: Callback<()>,
     disabled: bool,
@@ -13,11 +14,12 @@ pub enum Msg {
 
 #[derive(PartialEq, Clone, Properties)]
 pub struct Props {
-    #[props(required)]
+    #[prop_or_default]
     pub title: String,
-    #[props(required)]
     pub onsignal: Callback<()>,
+    #[prop_or_default]
     pub disabled: bool,
+    #[prop_or_default]
     pub is_active: bool,
 }
 
@@ -25,8 +27,9 @@ impl Component for Button {
     type Message = Msg;
     type Properties = Props;
 
-    fn create(props: Self::Properties, _link: ComponentLink<Self>) -> Self {
+    fn create(props: Self::Properties, link: ComponentLink<Self>) -> Self {
         Button {
+            link,
             title: props.title,
             onsignal: props.onsignal,
             disabled: props.disabled,
@@ -50,17 +53,15 @@ impl Component for Button {
         self.is_active = props.is_active;
         true
     }
-}
 
-impl Renderable<Button> for Button {
-    fn view(&self) -> Html<Self> {
+    fn view(&self) -> Html {
         let active_class = if self.is_active {
             "btn-active"
         } else {
             "btn-inactive"
         };
         html! {
-            <button class=("btn",{active_class}), onclick=|_| Msg::Clicked, disabled=self.disabled,>{ &self.title }</button>
+            <button class=("btn",{active_class}), onclick=self.link.callback(|_| Msg::Clicked), disabled=self.disabled,>{ &self.title }</button>
         }
     }
 }

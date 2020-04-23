@@ -1,6 +1,7 @@
 use yew::prelude::*;
 
 pub struct CheckboxLabel {
+    link: ComponentLink<Self>,
     css_id: String,
     label: String,
     oncheck: Option<Callback<bool>>,
@@ -13,8 +14,11 @@ pub enum Msg {
 
 #[derive(PartialEq, Clone, Properties)]
 pub struct Props {
+    #[prop_or_default]
     pub label: String,
+    #[prop_or_default]
     pub oncheck: Option<Callback<bool>>,
+    #[prop_or_default]
     pub initially_checked: bool,
 }
 
@@ -22,8 +26,9 @@ impl Component for CheckboxLabel {
     type Message = Msg;
     type Properties = Props;
 
-    fn create(props: Self::Properties, _link: ComponentLink<Self>) -> Self {
+    fn create(props: Self::Properties, link: ComponentLink<Self>) -> Self {
         Self {
+            link,
             css_id: uuid::Uuid::new_v4().to_string(),
             label: props.label,
             oncheck: props.oncheck,
@@ -50,10 +55,8 @@ impl Component for CheckboxLabel {
         // ignore initially_checked
         true
     }
-}
 
-impl Renderable<CheckboxLabel> for CheckboxLabel {
-    fn view(&self) -> Html<Self> {
+    fn view(&self) -> Html {
         // Hmm, putting this in one html!{} macro fails, so make a list
         // manually.
 
@@ -64,7 +67,7 @@ impl Renderable<CheckboxLabel> for CheckboxLabel {
                 id=&self.css_id,
                 type="checkbox",
                 checked=self.checked,
-                onclick=|_| Msg::Toggle,
+                onclick=self.link.callback(|_| Msg::Toggle),
                 />
         };
         let el2 = html! {

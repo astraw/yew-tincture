@@ -167,11 +167,12 @@ impl Default for FocusState {
     }
 }
 
-pub struct TypedInput<T>
+pub struct TypedInput<T: 'static>
     where
-        T: FromStr + Clone,
+        T: std::fmt::Display + FromStr + PartialEq + Clone,
         <T as FromStr>::Err: Clone,
 {
+    link: ComponentLink<Self>,
     raw_value_copy: String, // TODO: can we remove this and just use storage?
     storage: TypedInputStorage<T>,
     placeholder: String,
@@ -196,16 +197,19 @@ pub struct Props<T>
     /// The backing store for the data.
     pub storage: TypedInputStorage<T>,
     /// The placeholder text displayed when the input field is blank.
+    #[prop_or_default]
     pub placeholder: String,
     /// Called when the user wants to send a valid value
+    #[prop_or_default]
     pub on_send_valid: Option<Callback<T>>,
     /// Called whenever the user changes the value
+    #[prop_or_default]
     pub on_input: Option<Callback<RawAndParsed<T>>>,
 }
 
 impl<T> TypedInput<T>
     where
-        T: FromStr + Clone,
+        T: std::fmt::Display + FromStr + PartialEq + Clone,
         <T as FromStr>::Err: Clone,
 {
     fn send_value_if_valid(&mut self) {
@@ -225,9 +229,10 @@ impl<T> Component for TypedInput<T>
     type Message = Msg;
     type Properties = Props<T>;
 
-    fn create(props: Self::Properties, _link: ComponentLink<Self>) -> Self {
+    fn create(props: Self::Properties, link: ComponentLink<Self>) -> Self {
         let raw_value_copy = props.storage.rc.borrow().raw_and_parsed.raw_value.clone();
         Self {
+            link,
             raw_value_copy,
             storage: props.storage,
             placeholder: props.placeholder,
@@ -282,14 +287,8 @@ impl<T> Component for TypedInput<T>
         }
         true
     }
-}
 
-impl<T> Renderable<TypedInput<T>> for TypedInput<T>
-    where
-        T: 'static + Clone + PartialEq + FromStr + std::fmt::Display,
-        <T as FromStr>::Err: Clone,
-{
-    fn view(&self) -> Html<Self> {
+    fn view(&self) -> Html {
         let input_class = match &self.storage.rc.borrow().raw_and_parsed.parsed {
             Ok(_) => "ranged-value-input",
             Err(_) => "ranged-value-input-error",
@@ -300,12 +299,12 @@ impl<T> Renderable<TypedInput<T>> for TypedInput<T>
                 class=input_class,
                 placeholder=&self.placeholder,
                 value=&self.raw_value_copy,
-                oninput=|e| Msg::NewValue(e.value),
-                onfocus=|_| Msg::OnFocus,
-                onblur=|_| Msg::OnBlur,
-                onkeypress=|e| {
+                oninput=self.link.callback(|e: InputData| Msg::NewValue(e.value)),
+                onfocus=self.link.callback(|_| Msg::OnFocus),
+                onblur=self.link.callback(|_| Msg::OnBlur,)
+                onkeypress=self.link.callback(|e: KeyboardEvent| {
                     if e.key() == "Enter" { Msg::SendValueIfValid } else { Msg::Ignore }
-                },
+                }),
                 />
         }
     }
