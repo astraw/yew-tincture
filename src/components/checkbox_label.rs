@@ -18,8 +18,12 @@ pub struct Props {
     pub label: String,
     #[prop_or_default]
     pub oncheck: Option<Callback<bool>>,
+    /// Sets the `checked` property once, upon the creation of the checkbox.
     #[prop_or_default]
     pub initially_checked: bool,
+    /// When not None, sets the `checked` property of the checkbox.
+    #[prop_or_default]
+    pub updating_checked: Option<bool>,
 }
 
 impl Component for CheckboxLabel {
@@ -52,6 +56,9 @@ impl Component for CheckboxLabel {
     fn change(&mut self, props: Self::Properties) -> ShouldRender {
         self.label = props.label;
         self.oncheck = props.oncheck;
+        if let Some(checked) = props.updating_checked {
+            self.checked = checked;
+        }
         // ignore initially_checked
         true
     }
