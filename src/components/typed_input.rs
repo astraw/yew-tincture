@@ -1,69 +1,62 @@
 use yew::prelude::*;
 
-use std::str::FromStr;
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
+use std::str::FromStr;
 
 #[derive(Clone)]
 pub struct RawAndParsed<T>
-    where
-        T: FromStr + Clone,
-        <T as FromStr>::Err: Clone,
+where
+    T: FromStr + Clone,
+    <T as FromStr>::Err: Clone,
 {
     raw_value: String,
     parsed: Result<T, <T as FromStr>::Err>,
 }
 
 impl<T> RawAndParsed<T>
-    where
-        T: FromStr + Clone,
-        <T as FromStr>::Err: Clone,
+where
+    T: FromStr + Clone,
+    <T as FromStr>::Err: Clone,
 {
     /// Create a RawAndParsed with empty value.
     fn empty() -> Self
-        where
-            T: std::fmt::Display,
+    where
+        T: std::fmt::Display,
     {
         let raw_value = "".to_string();
         let parsed = raw_value.parse();
-        Self {
-            raw_value,
-            parsed,
-        }
+        Self { raw_value, parsed }
     }
 
     /// Create a RawAndParsed with a good value.
     fn from_initial(value: T) -> Self
-        where
-            T: std::fmt::Display,
+    where
+        T: std::fmt::Display,
     {
         let raw_value = format!("{}", value);
         let parsed = Ok(value);
-        Self {
-            raw_value,
-            parsed,
-        }
+        Self { raw_value, parsed }
     }
-
 }
 
 fn new_focus_state() -> Rc<Cell<FocusState>> {
     Rc::new(Cell::new(FocusState::IsBlurred))
 }
 
-#[derive(PartialEq,Clone)]
+#[derive(PartialEq, Clone)]
 pub struct TypedInputStorage<T>
-    where
-        T: FromStr + Clone,
-        <T as FromStr>::Err: Clone,
+where
+    T: FromStr + Clone,
+    <T as FromStr>::Err: Clone,
 {
     rc: Rc<RefCell<TypedInputStorageInner<T>>>,
 }
 
 impl<T> Default for TypedInputStorage<T>
-    where
-        T: FromStr + Clone + std::fmt::Display,
-        <T as FromStr>::Err: Clone,
+where
+    T: FromStr + Clone + std::fmt::Display,
+    <T as FromStr>::Err: Clone,
 {
     fn default() -> Self {
         TypedInputStorage::empty()
@@ -71,31 +64,31 @@ impl<T> Default for TypedInputStorage<T>
 }
 
 impl<T> TypedInputStorage<T>
-    where
-        T: FromStr + Clone,
-        <T as FromStr>::Err: Clone,
-        Result<T, <T as FromStr>::Err>: Clone,
+where
+    T: FromStr + Clone,
+    <T as FromStr>::Err: Clone,
+    Result<T, <T as FromStr>::Err>: Clone,
 {
     /// Create a TypedInputStorage with an empty value.
     pub fn empty() -> Self
-        where
-            T: std::fmt::Display,
+    where
+        T: std::fmt::Display,
     {
         Self::create(RawAndParsed::empty())
     }
 
     /// Create a TypedInputStorage with an empty value.
     pub fn from_initial(value: T) -> Self
-        where
-            T: std::fmt::Display,
+    where
+        T: std::fmt::Display,
     {
         Self::create(RawAndParsed::from_initial(value))
     }
 
     /// Create a TypedInputStorage with an empty value.
     fn create(raw_and_parsed: RawAndParsed<T>) -> Self
-        where
-            T: std::fmt::Display,
+    where
+        T: std::fmt::Display,
     {
         let inner = TypedInputStorageInner {
             raw_and_parsed,
@@ -113,8 +106,8 @@ impl<T> TypedInputStorage<T>
     ///
     /// See also the `set()` method.
     pub fn set_if_not_focused(&mut self, value: T)
-        where
-            T: std::fmt::Display,
+    where
+        T: std::fmt::Display,
     {
         use std::ops::Deref;
         {
@@ -129,13 +122,12 @@ impl<T> TypedInputStorage<T>
             }
         }
     }
-
 }
 
 struct TypedInputStorageInner<T>
-    where
-        T: FromStr + Clone,
-        <T as FromStr>::Err: Clone,
+where
+    T: FromStr + Clone,
+    <T as FromStr>::Err: Clone,
 {
     raw_and_parsed: RawAndParsed<T>,
     // TODO: does this need to be Rc<Cell<_>> or can I make it &'a _?
@@ -143,15 +135,15 @@ struct TypedInputStorageInner<T>
 }
 
 impl<T> PartialEq for TypedInputStorageInner<T>
-    where
-        T: FromStr + Clone,
-        <T as FromStr>::Err: Clone,
+where
+    T: FromStr + Clone,
+    <T as FromStr>::Err: Clone,
 {
     fn eq(&self, rhs: &Self) -> bool {
         // I am not sure when yew uses this. Here is my
         // best effort implementation.
-        Rc::ptr_eq(&self.focus_state, &rhs.focus_state) &&
-            self.raw_and_parsed.raw_value == rhs.raw_and_parsed.raw_value
+        Rc::ptr_eq(&self.focus_state, &rhs.focus_state)
+            && self.raw_and_parsed.raw_value == rhs.raw_and_parsed.raw_value
     }
 }
 
@@ -168,9 +160,9 @@ impl Default for FocusState {
 }
 
 pub struct TypedInput<T: 'static>
-    where
-        T: std::fmt::Display + FromStr + PartialEq + Clone,
-        <T as FromStr>::Err: Clone,
+where
+    T: std::fmt::Display + FromStr + PartialEq + Clone,
+    <T as FromStr>::Err: Clone,
 {
     link: ComponentLink<Self>,
     raw_value_copy: String, // TODO: can we remove this and just use storage?
@@ -190,9 +182,9 @@ pub enum Msg {
 
 #[derive(PartialEq, Clone, Properties)]
 pub struct Props<T>
-    where
-        T: FromStr + Clone + std::fmt::Display,
-        <T as FromStr>::Err: Clone,
+where
+    T: FromStr + Clone + std::fmt::Display,
+    <T as FromStr>::Err: Clone,
 {
     /// The backing store for the data.
     pub storage: TypedInputStorage<T>,
@@ -208,9 +200,9 @@ pub struct Props<T>
 }
 
 impl<T> TypedInput<T>
-    where
-        T: std::fmt::Display + FromStr + PartialEq + Clone,
-        <T as FromStr>::Err: Clone,
+where
+    T: std::fmt::Display + FromStr + PartialEq + Clone,
+    <T as FromStr>::Err: Clone,
 {
     fn send_value_if_valid(&mut self) {
         if let Some(ref mut callback) = self.on_send_valid {
@@ -222,9 +214,9 @@ impl<T> TypedInput<T>
 }
 
 impl<T> Component for TypedInput<T>
-    where
-        T: 'static + Clone + PartialEq + FromStr + std::fmt::Display,
-        <T as FromStr>::Err: Clone,
+where
+    T: 'static + Clone + PartialEq + FromStr + std::fmt::Display,
+    <T as FromStr>::Err: Clone,
 {
     type Message = Msg;
     type Properties = Props<T>;
@@ -295,16 +287,16 @@ impl<T> Component for TypedInput<T>
         };
 
         html! {
-            <input type="text",
-                class=input_class,
-                placeholder=&self.placeholder,
-                value=&self.raw_value_copy,
-                oninput=self.link.callback(|e: InputData| Msg::NewValue(e.value)),
-                onfocus=self.link.callback(|_| Msg::OnFocus),
-                onblur=self.link.callback(|_| Msg::OnBlur,)
+            <input type="text"
+                class=input_class
+                placeholder=self.placeholder.clone()
+                value=self.raw_value_copy.clone()
+                oninput=self.link.callback(|e: InputData| Msg::NewValue(e.value))
+                onfocus=self.link.callback(|_| Msg::OnFocus)
+                onblur=self.link.callback(|_| Msg::OnBlur)
                 onkeypress=self.link.callback(|e: KeyboardEvent| {
                     if e.key() == "Enter" { Msg::SendValueIfValid } else { Msg::Ignore }
-                }),
+                })
                 />
         }
     }

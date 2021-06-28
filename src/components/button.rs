@@ -61,7 +61,7 @@ impl Component for Button {
             "btn-inactive"
         };
         html! {
-            <button class=("btn",{active_class}), onclick=self.link.callback(|_| Msg::Clicked), disabled=self.disabled,>{ &self.title }</button>
+            <button class=("btn",{active_class}) onclick=self.link.callback(|_| Msg::Clicked) disabled=self.disabled>{ &self.title }</button>
         }
     }
 }

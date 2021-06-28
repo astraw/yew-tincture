@@ -71,14 +71,14 @@ impl Component for CheckboxLabel {
         // I could not get this to work, so we are using `css_id` here.
         let el1 = html! {
             <input
-                id=&self.css_id,
-                type="checkbox",
-                checked=self.checked,
-                onclick=self.link.callback(|_| Msg::Toggle),
+                id=self.css_id.clone()
+                type="checkbox"
+                checked=self.checked
+                onclick=self.link.callback(|_| Msg::Toggle)
                 />
         };
         let el2 = html! {
-            <label for=&self.css_id,>
+            <label for=self.css_id.clone()>
                 {&self.label}
             </label>
         };
