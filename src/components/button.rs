@@ -1,18 +1,12 @@
-use yew::prelude::*;
+use yew::{classes, html, Callback, Component, Context, Html, Properties};
 
-pub struct Button {
-    link: ComponentLink<Self>,
-    title: String,
-    onsignal: Callback<()>,
-    disabled: bool,
-    is_active: bool,
-}
+pub struct Button {}
 
 pub enum Msg {
     Clicked,
 }
 
-#[derive(PartialEq, Clone, Properties)]
+#[derive(PartialEq, Properties)]
 pub struct Props {
     #[prop_or_default]
     pub title: String,
@@ -27,41 +21,31 @@ impl Component for Button {
     type Message = Msg;
     type Properties = Props;
 
-    fn create(props: Self::Properties, link: ComponentLink<Self>) -> Self {
-        Button {
-            link,
-            title: props.title,
-            onsignal: props.onsignal,
-            disabled: props.disabled,
-            is_active: props.is_active,
-        }
+    fn create(_ctx: &Context<Self>) -> Self {
+        Self {}
     }
 
-    fn update(&mut self, msg: Self::Message) -> ShouldRender {
+    fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
             Msg::Clicked => {
-                self.onsignal.emit(());
+                ctx.props().onsignal.emit(());
             }
         }
         false
     }
 
-    fn change(&mut self, props: Self::Properties) -> ShouldRender {
-        self.title = props.title;
-        self.onsignal = props.onsignal;
-        self.disabled = props.disabled;
-        self.is_active = props.is_active;
-        true
-    }
-
-    fn view(&self) -> Html {
-        let active_class = if self.is_active {
+    fn view(&self, ctx: &Context<Self>) -> Html {
+        let active_class = if ctx.props().is_active {
             "btn-active"
         } else {
             "btn-inactive"
         };
         html! {
-            <button class=classes!("btn",{active_class}) onclick=self.link.callback(|_| Msg::Clicked) disabled=self.disabled>{ &self.title }</button>
+            <button
+                class={classes!("btn",active_class)}
+                onclick={ctx.link().callback(|_| Msg::Clicked)}
+                disabled={ctx.props().disabled}>{ &ctx.props().title }
+            </button>
         }
     }
 }

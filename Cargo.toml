@@ -5,5 +5,5 @@ authors = ["Andrew Straw <strawman@astraw.com>"]
 edition = "2018"
 
 [dependencies]
-yew = "0.18"
+yew = "0.19"
 uuid = { version = "0.8", features = ["v4","wasm-bindgen"] }

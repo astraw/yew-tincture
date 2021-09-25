@@ -1,10 +1,8 @@
-use yew::prelude::*;
+use yew::{html, Callback, Component, Context, Html, Properties};
 
 pub struct CheckboxLabel {
-    link: ComponentLink<Self>,
     css_id: String,
-    label: String,
-    oncheck: Option<Callback<bool>>,
+    /// copy of state in DOM
     checked: bool,
 }
 
@@ -12,7 +10,7 @@ pub enum Msg {
     Toggle,
 }
 
-#[derive(PartialEq, Clone, Properties)]
+#[derive(PartialEq, Properties)]
 pub struct Props {
     #[prop_or_default]
     pub label: String,
@@ -30,22 +28,19 @@ impl Component for CheckboxLabel {
     type Message = Msg;
     type Properties = Props;
 
-    fn create(props: Self::Properties, link: ComponentLink<Self>) -> Self {
+    fn create(ctx: &Context<Self>) -> Self {
         Self {
-            link,
             css_id: uuid::Uuid::new_v4().to_string(),
-            label: props.label,
-            oncheck: props.oncheck,
-            checked: props.initially_checked,
+            checked: ctx.props().initially_checked,
         }
     }
 
-    fn update(&mut self, msg: Self::Message) -> ShouldRender {
+    fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
             Msg::Toggle => {
                 let checked = !self.checked;
                 self.checked = checked;
-                if let Some(ref mut callback) = self.oncheck {
+                if let Some(ref callback) = &ctx.props().oncheck {
                     callback.emit(checked);
                 }
             }
@@ -53,17 +48,7 @@ impl Component for CheckboxLabel {
         true
     }
 
-    fn change(&mut self, props: Self::Properties) -> ShouldRender {
-        self.label = props.label;
-        self.oncheck = props.oncheck;
-        if let Some(checked) = props.updating_checked {
-            self.checked = checked;
-        }
-        // ignore initially_checked
-        true
-    }
-
-    fn view(&self) -> Html {
+    fn view(&self, ctx: &Context<Self>) -> Html {
         // Hmm, putting this in one html!{} macro fails, so make a list
         // manually.
 
@@ -71,15 +56,15 @@ impl Component for CheckboxLabel {
         // I could not get this to work, so we are using `css_id` here.
         let el1 = html! {
             <input
-                id=self.css_id.clone()
+                id={self.css_id.clone()}
                 type="checkbox"
-                checked=self.checked
-                onclick=self.link.callback(|_| Msg::Toggle)
+                checked={self.checked}
+                onclick={ctx.link().callback(|_| Msg::Toggle)}
                 />
         };
         let el2 = html! {
-            <label for=self.css_id.clone()>
-                {&self.label}
+            <label for={self.css_id.clone()}>
+                {ctx.props().label.as_str()}
             </label>
         };
         let mut vlist = yew::virtual_dom::vlist::VList::new();

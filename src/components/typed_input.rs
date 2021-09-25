@@ -1,8 +1,14 @@
-use yew::prelude::*;
+use yew::{
+    events::KeyboardEvent, html, web_sys::HtmlInputElement, Callback, Component, Context, Html,
+    InputEvent, Properties, TargetCast,
+};
 
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 use std::str::FromStr;
+
+// TODO: reconsider and rework this as a result of the Components API change in
+// yew 0.19. In particular: do we need to keep a clone of the `storage` field?
 
 #[derive(Clone)]
 pub struct RawAndParsed<T>
@@ -164,12 +170,8 @@ where
     T: std::fmt::Display + FromStr + PartialEq + Clone,
     <T as FromStr>::Err: Clone,
 {
-    link: ComponentLink<Self>,
     raw_value_copy: String, // TODO: can we remove this and just use storage?
     storage: TypedInputStorage<T>,
-    placeholder: String,
-    on_send_valid: Option<Callback<T>>,
-    on_input: Option<Callback<RawAndParsed<T>>>,
 }
 
 pub enum Msg {
@@ -180,10 +182,10 @@ pub enum Msg {
     Ignore,
 }
 
-#[derive(PartialEq, Clone, Properties)]
+#[derive(PartialEq, Properties)]
 pub struct Props<T>
 where
-    T: FromStr + Clone + std::fmt::Display,
+    T: FromStr + Clone + PartialEq + std::fmt::Display,
     <T as FromStr>::Err: Clone,
 {
     /// The backing store for the data.
@@ -204,8 +206,8 @@ where
     T: std::fmt::Display + FromStr + PartialEq + Clone,
     <T as FromStr>::Err: Clone,
 {
-    fn send_value_if_valid(&mut self) {
-        if let Some(ref mut callback) = self.on_send_valid {
+    fn send_value_if_valid(&mut self, on_send_valid: Option<&Callback<T>>) {
+        if let Some(ref callback) = on_send_valid {
             if let Ok(value) = &self.storage.rc.borrow().raw_and_parsed.parsed {
                 callback.emit(value.clone());
             }
@@ -221,27 +223,22 @@ where
     type Message = Msg;
     type Properties = Props<T>;
 
-    fn create(props: Self::Properties, link: ComponentLink<Self>) -> Self {
-        let raw_value_copy = props.storage.rc.borrow().raw_and_parsed.raw_value.clone();
+    fn create(ctx: &Context<Self>) -> Self {
+        let raw_value_copy = ctx
+            .props()
+            .storage
+            .rc
+            .borrow()
+            .raw_and_parsed
+            .raw_value
+            .clone();
         Self {
-            link,
             raw_value_copy,
-            storage: props.storage,
-            placeholder: props.placeholder,
-            on_send_valid: props.on_send_valid,
-            on_input: props.on_input,
+            storage: ctx.props().storage.clone(),
         }
     }
 
-    fn change(&mut self, props: Self::Properties) -> ShouldRender {
-        self.raw_value_copy = props.storage.rc.borrow().raw_and_parsed.raw_value.clone();
-        self.storage = props.storage;
-        self.placeholder = props.placeholder;
-        self.on_send_valid = props.on_send_valid;
-        true
-    }
-
-    fn update(&mut self, msg: Self::Message) -> ShouldRender {
+    fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
             Msg::NewValue(raw_value) => {
                 self.raw_value_copy = raw_value.clone();
@@ -253,10 +250,9 @@ where
                     stor.raw_and_parsed.clone()
                 };
 
-                if let Some(ref mut callback) = self.on_input {
+                if let Some(ref callback) = &ctx.props().on_input {
                     callback.emit(stor2);
                 }
-
             }
             Msg::OnFocus => {
                 let stor = self.storage.rc.borrow_mut();
@@ -267,10 +263,10 @@ where
                     let stor = self.storage.rc.borrow_mut();
                     stor.focus_state.replace(FocusState::IsBlurred);
                 }
-                self.send_value_if_valid();
+                self.send_value_if_valid(ctx.props().on_send_valid.as_ref());
             }
             Msg::SendValueIfValid => {
-                self.send_value_if_valid();
+                self.send_value_if_valid(ctx.props().on_send_valid.as_ref());
                 return false;
             }
             Msg::Ignore => {
@@ -280,7 +276,7 @@ where
         true
     }
 
-    fn view(&self) -> Html {
+    fn view(&self, ctx: &Context<Self>) -> Html {
         let input_class = match &self.storage.rc.borrow().raw_and_parsed.parsed {
             Ok(_) => "ranged-value-input",
             Err(_) => "ranged-value-input-error",
@@ -288,15 +284,18 @@ where
 
         html! {
             <input type="text"
-                class=input_class
-                placeholder=self.placeholder.clone()
-                value=self.raw_value_copy.clone()
-                oninput=self.link.callback(|e: InputData| Msg::NewValue(e.value))
-                onfocus=self.link.callback(|_| Msg::OnFocus)
-                onblur=self.link.callback(|_| Msg::OnBlur)
-                onkeypress=self.link.callback(|e: KeyboardEvent| {
+                class={input_class}
+                placeholder={ctx.props().placeholder.clone()}
+                value={self.raw_value_copy.clone()}
+                oninput={ctx.link().callback(|e: InputEvent| {
+                    let input: HtmlInputElement = e.target_unchecked_into();
+                    Msg::NewValue(input.value())
+                })}
+                onfocus={ctx.link().callback(|_| Msg::OnFocus)}
+                onblur={ctx.link().callback(|_| Msg::OnBlur)}
+                onkeypress={ctx.link().callback(|e: KeyboardEvent| {
                     if e.key() == "Enter" { Msg::SendValueIfValid } else { Msg::Ignore }
-                })
+                })}
                 />
         }
     }
