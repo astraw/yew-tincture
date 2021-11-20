@@ -5,5 +5,6 @@ authors = ["Andrew Straw <strawman@astraw.com>"]
 edition = "2018"
 
 [dependencies]
-yew = "0.19"
+yew = {git="https://github.com/astraw/yew", rev="d28ed8761541eac785eeb18462fd1b2dc6eb8b13"}
 uuid = { version = "0.8", features = ["v4","wasm-bindgen"] }
+web-sys = {version = "0.3", features=["HtmlInputElement"]}

@@ -1,6 +1,7 @@
+use web_sys::HtmlInputElement;
 use yew::{
-    events::KeyboardEvent, html, web_sys::HtmlInputElement, Callback, Component, Context, Html,
-    InputEvent, Properties, TargetCast,
+    events::KeyboardEvent, html, Callback, Component, Context, Html, InputEvent, Properties,
+    TargetCast,
 };
 
 use std::cell::{Cell, RefCell};
