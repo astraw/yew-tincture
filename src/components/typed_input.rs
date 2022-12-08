@@ -54,7 +54,7 @@ fn new_focus_state() -> Rc<Cell<FocusState>> {
 #[derive(PartialEq, Clone)]
 pub struct TypedInputStorage<T>
 where
-    T: FromStr + Clone,
+    T: 'static + Clone + PartialEq + FromStr + std::fmt::Display,
     <T as FromStr>::Err: Clone,
 {
     rc: Rc<RefCell<TypedInputStorageInner<T>>>,
@@ -62,7 +62,7 @@ where
 
 impl<T> Default for TypedInputStorage<T>
 where
-    T: FromStr + Clone + std::fmt::Display,
+    T: 'static + Clone + PartialEq + FromStr + std::fmt::Display,
     <T as FromStr>::Err: Clone,
 {
     fn default() -> Self {
@@ -72,7 +72,7 @@ where
 
 impl<T> TypedInputStorage<T>
 where
-    T: FromStr + Clone,
+    T: 'static + Clone + PartialEq + FromStr + std::fmt::Display,
     <T as FromStr>::Err: Clone,
     Result<T, <T as FromStr>::Err>: Clone,
 {
@@ -100,6 +100,7 @@ where
         let inner = TypedInputStorageInner {
             raw_and_parsed,
             focus_state: new_focus_state(),
+            link: None,
         };
         let me = Rc::new(RefCell::new(inner));
         Self { rc: me }
@@ -109,9 +110,43 @@ where
         self.rc.borrow().raw_and_parsed.parsed.clone()
     }
 
+    fn set_link(&mut self, link: yew::html::Scope<TypedInput<T>>) {
+        let mut inner = self.rc.borrow_mut();
+        inner.link = Some(link);
+    }
+
+    /// Modify the value.
+    ///
+    /// See also the [Self::set_if_not_focused] method.
+    pub fn modify<F>(&mut self, f: F) -> Result<(), ()>
+    where
+        F: Fn(&mut T),
+        T: std::fmt::Display,
+    {
+        let mut inner = self.rc.borrow_mut();
+        let raw_value = match &mut inner.raw_and_parsed.parsed {
+            Ok(value) => {
+                f(value);
+                format!("{}", value)
+            }
+            Err(_) => {
+                return Err(());
+            }
+        };
+        if let Some(link) = &inner.link {
+            link.send_message(Msg::NewValue(raw_value));
+        }
+        Ok(())
+    }
+
+    /// Get the value.
+    pub fn get(&self) -> Result<T, <T as FromStr>::Err> {
+        self.rc.borrow_mut().raw_and_parsed.parsed.clone()
+    }
+
     /// Update the value if the user is not editing it.
     ///
-    /// See also the `set()` method.
+    /// See also the [Self::set] method.
     pub fn set_if_not_focused(&mut self, value: T)
     where
         T: std::fmt::Display,
@@ -133,17 +168,18 @@ where
 
 struct TypedInputStorageInner<T>
 where
-    T: FromStr + Clone,
+    T: 'static + Clone + PartialEq + FromStr + std::fmt::Display,
     <T as FromStr>::Err: Clone,
 {
     raw_and_parsed: RawAndParsed<T>,
     // TODO: does this need to be Rc<Cell<_>> or can I make it &'a _?
     focus_state: Rc<Cell<FocusState>>,
+    link: Option<yew::html::Scope<TypedInput<T>>>,
 }
 
 impl<T> PartialEq for TypedInputStorageInner<T>
 where
-    T: FromStr + Clone,
+    T: 'static + Clone + PartialEq + FromStr + std::fmt::Display,
     <T as FromStr>::Err: Clone,
 {
     fn eq(&self, rhs: &Self) -> bool {
@@ -151,6 +187,7 @@ where
         // best effort implementation.
         Rc::ptr_eq(&self.focus_state, &rhs.focus_state)
             && self.raw_and_parsed.raw_value == rhs.raw_and_parsed.raw_value
+        // TODO: compare link?
     }
 }
 
@@ -166,9 +203,9 @@ impl Default for FocusState {
     }
 }
 
-pub struct TypedInput<T: 'static>
+pub struct TypedInput<T>
 where
-    T: std::fmt::Display + FromStr + PartialEq + Clone,
+    T: 'static + Clone + PartialEq + FromStr + std::fmt::Display,
     <T as FromStr>::Err: Clone,
 {
     raw_value_copy: String, // TODO: can we remove this and just use storage?
@@ -186,7 +223,7 @@ pub enum Msg {
 #[derive(PartialEq, Properties)]
 pub struct Props<T>
 where
-    T: FromStr + Clone + PartialEq + std::fmt::Display,
+    T: FromStr + Clone + PartialEq + std::fmt::Display + 'static,
     <T as FromStr>::Err: Clone,
 {
     /// The backing store for the data.
@@ -233,9 +270,12 @@ where
             .raw_and_parsed
             .raw_value
             .clone();
+        let mut storage = ctx.props().storage.clone();
+        let link: yew::html::Scope<TypedInput<T>> = ctx.link().clone();
+        storage.set_link(link);
         Self {
             raw_value_copy,
-            storage: ctx.props().storage.clone(),
+            storage,
         }
     }
 
