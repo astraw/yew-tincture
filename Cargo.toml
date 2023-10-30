@@ -9,6 +9,6 @@ license = "MIT/Apache-2.0"
 categories = [ "web-programming", "wasm", "gui" ]
 
 [dependencies]
-yew = "0.20"
+yew = "0.21"
 uuid = { version = "1.2.2", features = ["v4","wasm-bindgen"] }
 web-sys = {version = "0.3", features=["HtmlInputElement"]}
