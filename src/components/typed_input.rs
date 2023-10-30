@@ -11,6 +11,17 @@ use std::str::FromStr;
 // TODO: reconsider and rework this as a result of the Components API change in
 // yew 0.19. In particular: do we need to keep a clone of the `storage` field?
 
+#[derive(Debug)]
+pub struct TypedInputParseError {}
+
+impl std::error::Error for TypedInputParseError {}
+
+impl std::fmt::Display for TypedInputParseError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        write!(f, "parse error for typed input")
+    }
+}
+
 #[derive(Clone)]
 pub struct RawAndParsed<T>
 where
@@ -118,7 +129,7 @@ where
     /// Modify the value.
     ///
     /// See also the [Self::set_if_not_focused] method.
-    pub fn modify<F>(&mut self, f: F) -> Result<(), ()>
+    pub fn modify<F>(&mut self, f: F) -> Result<(), TypedInputParseError>
     where
         F: Fn(&mut T),
         T: std::fmt::Display,
@@ -129,8 +140,8 @@ where
                 f(value);
                 format!("{}", value)
             }
-            Err(_) => {
-                return Err(());
+            Err(_e) => {
+                return Err(TypedInputParseError {});
             }
         };
         if let Some(link) = &inner.link {
