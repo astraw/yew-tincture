@@ -191,16 +191,11 @@ where
     }
 }
 
-#[derive(PartialEq, Clone, Copy, Debug)]
+#[derive(PartialEq, Clone, Copy, Debug, Default)]
 enum FocusState {
     IsFocused,
+    #[default]
     IsBlurred,
-}
-
-impl Default for FocusState {
-    fn default() -> FocusState {
-        FocusState::IsBlurred
-    }
 }
 
 pub struct TypedInput<T>
@@ -245,7 +240,7 @@ where
     <T as FromStr>::Err: Clone,
 {
     fn send_value_if_valid(&mut self, on_send_valid: Option<&Callback<T>>) {
-        if let Some(ref callback) = on_send_valid {
+        if let Some(callback) = on_send_valid {
             if let Ok(value) = &self.storage.rc.borrow().raw_and_parsed.parsed {
                 callback.emit(value.clone());
             }
