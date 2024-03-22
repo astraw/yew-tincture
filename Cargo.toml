@@ -1,3 +1,5 @@
+workspace = { members = ["yew-tincture-test"] }
+
 [package]
 name = "yew-tincture"
 description = "components for yew web framework"
