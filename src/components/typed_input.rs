@@ -214,7 +214,6 @@ where
     T: 'static + Clone + PartialEq + FromStr + std::fmt::Display,
     <T as FromStr>::Err: Clone,
 {
-    raw_value_copy: String, // TODO: can we remove this and just use storage?
     storage: TypedInputStorage<T>,
 }
 
@@ -268,27 +267,15 @@ where
     type Properties = Props<T>;
 
     fn create(ctx: &Context<Self>) -> Self {
-        let raw_value_copy = ctx
-            .props()
-            .storage
-            .rc
-            .borrow()
-            .raw_and_parsed
-            .raw_value
-            .clone();
         let mut storage = ctx.props().storage.clone();
         let link: yew::html::Scope<TypedInput<T>> = ctx.link().clone();
         storage.set_link(link);
-        Self {
-            raw_value_copy,
-            storage,
-        }
+        Self { storage }
     }
 
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
             Msg::NewValue(raw_value) => {
-                self.raw_value_copy = raw_value.clone();
                 let parsed = raw_value.parse();
                 let stor2 = {
                     let mut stor = self.storage.rc.borrow_mut();
@@ -324,6 +311,7 @@ where
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
+        let value = self.storage.rc.borrow().raw_and_parsed.raw_value.clone();
         let input_class = match &self.storage.rc.borrow().raw_and_parsed.parsed {
             Ok(_) => "ranged-value-input",
             Err(_) => "ranged-value-input-error",
@@ -333,7 +321,7 @@ where
             <input type="text"
                 class={input_class}
                 placeholder={ctx.props().placeholder.clone()}
-                value={self.raw_value_copy.clone()}
+                value={value}
                 oninput={ctx.link().callback(|e: InputEvent| {
                     let input: HtmlInputElement = e.target_unchecked_into();
                     Msg::NewValue(input.value())
