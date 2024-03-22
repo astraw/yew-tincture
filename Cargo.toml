@@ -4,7 +4,7 @@ workspace = { members = ["yew-tincture-test"] }
 name = "yew-tincture"
 description = "components for yew web framework"
 repository = "https://github.com/astraw/yew-tincture"
-version = "0.2.1"
+version = "0.2.2"
 authors = ["Andrew Straw <strawman@astraw.com>"]
 edition = "2018"
 license = "MIT/Apache-2.0"
