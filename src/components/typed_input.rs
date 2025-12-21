@@ -157,7 +157,7 @@ where
 
     /// Update the value if the user is not editing it.
     ///
-    /// See also the [Self::set] method.
+    /// See also the [Self::modify] method.
     pub fn set_if_not_focused(&mut self, value: T)
     where
         T: std::fmt::Display,
