@@ -40,6 +40,21 @@ where
     T: FromStr + Clone,
     <T as FromStr>::Err: Clone,
 {
+    /// The text as entered by the user.
+    #[must_use]
+    pub fn raw_value(&self) -> &str {
+        &self.raw_value
+    }
+
+    /// The result of parsing [`Self::raw_value`].
+    ///
+    /// # Errors
+    ///
+    /// Returns the parse error if the text is not a valid `T`.
+    pub fn parsed(&self) -> Result<&T, &<T as FromStr>::Err> {
+        self.parsed.as_ref()
+    }
+
     /// Create a `RawAndParsed` with empty value.
     fn empty() -> Self
     where
@@ -162,7 +177,7 @@ where
     /// is not a valid `T`.
     pub fn modify<F>(&mut self, f: F) -> Result<(), TypedInputParseError>
     where
-        F: Fn(&mut T),
+        F: FnOnce(&mut T),
         T: std::fmt::Display,
     {
         let mut inner = self.rc.borrow_mut();
@@ -408,5 +423,64 @@ where
                 })}
                 />
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn raw_and_parsed_accessors() {
+        let rp = RawAndParsed::<f64>::from_initial(1.5);
+        assert_eq!(rp.raw_value(), "1.5");
+        assert_eq!(rp.parsed(), Ok(&1.5));
+
+        let rp = RawAndParsed::<f64>::empty();
+        assert_eq!(rp.raw_value(), "");
+        assert!(rp.parsed().is_err());
+    }
+
+    #[test]
+    fn empty_storage_does_not_parse() {
+        let storage = TypedInputStorage::<u32>::default();
+        assert!(storage.get().is_err());
+    }
+
+    #[test]
+    fn modify_updates_value_and_text() {
+        let mut storage = TypedInputStorage::from_initial(41u32);
+        storage.modify(|v| *v += 1).unwrap();
+        assert_eq!(storage.get(), Ok(42));
+    }
+
+    #[test]
+    fn modify_rejects_invalid_input() {
+        let mut storage = TypedInputStorage::<u32>::empty();
+        let mut called = false;
+        let result = storage.modify(|_| called = true);
+        assert!(result.is_err());
+        assert!(!called);
+    }
+
+    #[test]
+    fn clones_share_state() {
+        let a = TypedInputStorage::from_initial(1u8);
+        let mut b = a.clone();
+        b.set_if_not_focused(2);
+        assert_eq!(a.get(), Ok(2));
+    }
+
+    #[test]
+    fn set_if_not_focused_respects_focus() {
+        let mut storage = TypedInputStorage::from_initial(1i32);
+        storage.rc.borrow().focus_state.set(FocusState::IsFocused);
+        storage.set_if_not_focused(2);
+        assert_eq!(storage.get(), Ok(1));
+
+        storage.rc.borrow().focus_state.set(FocusState::IsBlurred);
+        storage.set_if_not_focused(3);
+        assert_eq!(storage.get(), Ok(3));
+        assert_eq!(storage.rc.borrow().raw_and_parsed.raw_value, "3");
     }
 }
