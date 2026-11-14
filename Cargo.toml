@@ -11,6 +11,6 @@ license = "MIT/Apache-2.0"
 categories = ["web-programming", "wasm", "gui"]
 
 [dependencies]
-yew = "0.22"
+yew = "0.23"
 uuid = { version = "1.7.0", features = ["v4", "js"] }
 web-sys = { version = "0.3", features = ["HtmlInputElement"] }
