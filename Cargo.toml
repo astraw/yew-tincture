@@ -36,7 +36,7 @@ categories = ["web-programming", "wasm", "gui"]
 [dependencies]
 yew.workspace = true
 uuid = { version = "1.29", features = ["v4", "js"] }
-web-sys = { version = "0.3.107", features = ["HtmlInputElement"] }
+web-sys = { version = "0.3.106", features = ["HtmlInputElement"] }
 
 [lints]
 workspace = true
