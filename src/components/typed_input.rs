@@ -180,17 +180,19 @@ where
         F: FnOnce(&mut T),
         T: std::fmt::Display,
     {
-        let mut inner = self.rc.borrow_mut();
-        let raw_value = match &mut inner.raw_and_parsed.parsed {
-            Ok(value) => {
-                f(value);
-                format!("{value}")
-            }
-            Err(_e) => {
+        let (raw_value, link) = {
+            let mut inner = self.rc.borrow_mut();
+            let Ok(value) = &mut inner.raw_and_parsed.parsed else {
                 return Err(TypedInputParseError {});
-            }
+            };
+            f(value);
+            let raw_value = format!("{value}");
+            inner.raw_and_parsed.raw_value.clone_from(&raw_value);
+            (raw_value, inner.link.clone())
         };
-        if let Some(link) = &inner.link {
+        // Notify the mounted component, if any, after releasing the borrow so
+        // that a synchronous update cannot hit a `BorrowMutError`.
+        if let Some(link) = link {
             link.send_message(Msg::NewValue(raw_value));
         }
         Ok(())
@@ -452,6 +454,7 @@ mod tests {
         let mut storage = TypedInputStorage::from_initial(41u32);
         storage.modify(|v| *v += 1).unwrap();
         assert_eq!(storage.get(), Ok(42));
+        assert_eq!(storage.rc.borrow().raw_and_parsed.raw_value, "42");
     }
 
     #[test]
