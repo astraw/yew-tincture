@@ -41,12 +41,7 @@ impl Component for Model {
                 };
             }
             Msg::Tick => {
-                let mut size = if let Ok(size) = self.size.get() {
-                    size
-                } else {
-                    0.0
-                };
-                size += 0.1;
+                let size = self.size.get().unwrap_or(0.0) + 0.1;
                 self.size.set_if_not_focused(size);
             }
         }

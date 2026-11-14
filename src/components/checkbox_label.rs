@@ -1,4 +1,4 @@
-use yew::{html, Callback, Component, Context, Html, Properties};
+use yew::{Callback, Component, Context, Html, Properties, html};
 
 pub struct CheckboxLabel {
     css_id: String,
@@ -40,7 +40,7 @@ impl Component for CheckboxLabel {
             Msg::Toggle => {
                 let checked = !self.checked;
                 self.checked = checked;
-                if let Some(ref callback) = &ctx.props().oncheck {
+                if let Some(callback) = &ctx.props().oncheck {
                     callback.emit(checked);
                 }
             }

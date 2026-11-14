@@ -1,4 +1,14 @@
-workspace = { members = ["yew-tincture-test"] }
+[workspace]
+members = ["yew-tincture-test"]
+resolver = "3"
+
+[workspace.package]
+edition = "2024"
+rust-version = "1.100"
+license = "MIT OR Apache-2.0"
+
+[workspace.dependencies]
+yew = "0.23.0"
 
 [package]
 name = "yew-tincture"
@@ -6,11 +16,14 @@ description = "components for yew web framework"
 repository = "https://github.com/astraw/yew-tincture"
 version = "0.3.0"
 authors = ["Andrew Straw <strawman@astraw.com>"]
-edition = "2018"
-license = "MIT/Apache-2.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+readme = "README.md"
+keywords = ["yew", "components", "wasm", "web"]
 categories = ["web-programming", "wasm", "gui"]
 
 [dependencies]
-yew = "0.23"
+yew.workspace = true
 uuid = { version = "1.29", features = ["v4", "js"] }
 web-sys = { version = "0.3.107", features = ["HtmlInputElement"] }

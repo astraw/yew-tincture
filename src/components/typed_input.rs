@@ -1,7 +1,7 @@
 use web_sys::HtmlInputElement;
 use yew::{
-    events::KeyboardEvent, html, Callback, Component, Context, Html, InputEvent, Properties,
-    TargetCast,
+    Callback, Component, Context, Html, InputEvent, Properties, TargetCast, events::KeyboardEvent,
+    html,
 };
 
 use std::cell::{Cell, RefCell};
@@ -250,10 +250,10 @@ where
     <T as FromStr>::Err: Clone,
 {
     fn send_value_if_valid(&mut self, on_send_valid: Option<&Callback<T>>) {
-        if let Some(callback) = on_send_valid {
-            if let Ok(value) = &self.storage.rc.borrow().raw_and_parsed.parsed {
-                callback.emit(value.clone());
-            }
+        if let Some(callback) = on_send_valid
+            && let Ok(value) = &self.storage.rc.borrow().raw_and_parsed.parsed
+        {
+            callback.emit(value.clone());
         }
     }
 }
@@ -284,7 +284,7 @@ where
                     stor.raw_and_parsed.clone()
                 };
 
-                if let Some(ref callback) = &ctx.props().on_input {
+                if let Some(callback) = &ctx.props().on_input {
                     callback.emit(stor2);
                 }
             }

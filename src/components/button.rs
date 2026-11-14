@@ -1,4 +1,4 @@
-use yew::{classes, html, Callback, Component, Context, Html, Properties};
+use yew::{Callback, Component, Context, Html, Properties, classes, html};
 
 pub struct Button {}
 
