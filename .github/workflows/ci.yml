@@ -1,0 +1,48 @@
+name: ci
+
+on:
+  push:
+    branches: [ '**' ]
+  pull_request:
+    branches: [ '**' ]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: -D warnings
+  RUSTDOCFLAGS: -D warnings
+
+jobs:
+  check:
+    name: check (${{ matrix.toolchain }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # "1.100" is the MSRV declared in Cargo.toml.
+        toolchain: [stable, "1.100"]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.toolchain }}
+          targets: wasm32-unknown-unknown
+          components: clippy, rustfmt
+      - name: Format
+        run: cargo fmt --all --check
+      - name: Clippy (native)
+        run: cargo clippy --all-targets --workspace -- -D warnings
+      - name: Clippy (wasm32)
+        run: cargo clippy --all-targets --workspace --target wasm32-unknown-unknown -- -D warnings
+      - name: Test
+        run: cargo test --workspace
+      - name: Build test app (wasm32)
+        run: cargo build -p yew-tincture-test --target wasm32-unknown-unknown
+      - name: Docs
+        run: cargo doc --no-deps --workspace
