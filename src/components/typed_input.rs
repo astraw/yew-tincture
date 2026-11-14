@@ -11,6 +11,8 @@ use std::str::FromStr;
 // TODO: reconsider and rework this as a result of the Components API change in
 // yew 0.19. In particular: do we need to keep a clone of the `storage` field?
 
+/// Error returned by [`TypedInputStorage::modify`] when the current input does
+/// not parse to a valid value.
 #[derive(Debug)]
 pub struct TypedInputParseError {}
 
@@ -22,6 +24,7 @@ impl std::fmt::Display for TypedInputParseError {
     }
 }
 
+/// The text in a [`TypedInput`] together with the result of parsing it.
 #[derive(Clone)]
 pub struct RawAndParsed<T>
 where
@@ -37,24 +40,37 @@ where
     T: FromStr + Clone,
     <T as FromStr>::Err: Clone,
 {
-    /// Create a RawAndParsed with empty value.
+    /// Create a `RawAndParsed` with empty value.
     fn empty() -> Self
     where
         T: std::fmt::Display,
     {
-        let raw_value = "".to_string();
+        let raw_value = String::new();
         let parsed = raw_value.parse();
         Self { raw_value, parsed }
     }
 
-    /// Create a RawAndParsed with a good value.
+    /// Create a `RawAndParsed` with a good value.
     fn from_initial(value: T) -> Self
     where
         T: std::fmt::Display,
     {
-        let raw_value = format!("{}", value);
+        let raw_value = format!("{value}");
         let parsed = Ok(value);
         Self { raw_value, parsed }
+    }
+}
+
+impl<T> std::fmt::Debug for RawAndParsed<T>
+where
+    T: FromStr + Clone + std::fmt::Debug,
+    <T as FromStr>::Err: Clone + std::fmt::Debug,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("RawAndParsed")
+            .field("raw_value", &self.raw_value)
+            .field("parsed", &self.parsed)
+            .finish()
     }
 }
 
@@ -62,6 +78,10 @@ fn new_focus_state() -> Rc<Cell<FocusState>> {
     Rc::new(Cell::new(FocusState::IsBlurred))
 }
 
+/// Shared backing store for the value of a [`TypedInput`].
+///
+/// Clones share the same underlying value, so the parent component can keep a
+/// clone to read or update the value shown by the input.
 #[derive(PartialEq, Clone)]
 pub struct TypedInputStorage<T>
 where
@@ -87,7 +107,8 @@ where
     <T as FromStr>::Err: Clone,
     Result<T, <T as FromStr>::Err>: Clone,
 {
-    /// Create a TypedInputStorage with an empty value.
+    /// Create a `TypedInputStorage` with an empty value.
+    #[must_use]
     pub fn empty() -> Self
     where
         T: std::fmt::Display,
@@ -95,7 +116,8 @@ where
         Self::create(RawAndParsed::empty())
     }
 
-    /// Create a TypedInputStorage with an empty value.
+    /// Create a `TypedInputStorage` holding `value`.
+    #[must_use]
     pub fn from_initial(value: T) -> Self
     where
         T: std::fmt::Display,
@@ -103,7 +125,6 @@ where
         Self::create(RawAndParsed::from_initial(value))
     }
 
-    /// Create a TypedInputStorage with an empty value.
     fn create(raw_and_parsed: RawAndParsed<T>) -> Self
     where
         T: std::fmt::Display,
@@ -117,6 +138,11 @@ where
         Self { rc: me }
     }
 
+    /// Get the parsed value.
+    ///
+    /// # Errors
+    ///
+    /// Returns the parse error if the current input is not a valid `T`.
     pub fn parsed(&self) -> Result<T, <T as FromStr>::Err> {
         self.rc.borrow().raw_and_parsed.parsed.clone()
     }
@@ -128,7 +154,12 @@ where
 
     /// Modify the value.
     ///
-    /// See also the [Self::set_if_not_focused] method.
+    /// See also the [`Self::set_if_not_focused`] method.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`TypedInputParseError`] without calling `f` if the current input
+    /// is not a valid `T`.
     pub fn modify<F>(&mut self, f: F) -> Result<(), TypedInputParseError>
     where
         F: Fn(&mut T),
@@ -138,7 +169,7 @@ where
         let raw_value = match &mut inner.raw_and_parsed.parsed {
             Ok(value) => {
                 f(value);
-                format!("{}", value)
+                format!("{value}")
             }
             Err(_e) => {
                 return Err(TypedInputParseError {});
@@ -150,30 +181,41 @@ where
         Ok(())
     }
 
-    /// Get the value.
+    /// Get the parsed value. Equivalent to [`Self::parsed`].
+    ///
+    /// # Errors
+    ///
+    /// Returns the parse error if the current input is not a valid `T`.
     pub fn get(&self) -> Result<T, <T as FromStr>::Err> {
-        self.rc.borrow_mut().raw_and_parsed.parsed.clone()
+        self.parsed()
     }
 
     /// Update the value if the user is not editing it.
     ///
-    /// See also the [Self::modify] method.
+    /// See also the [`Self::modify`] method.
     pub fn set_if_not_focused(&mut self, value: T)
     where
         T: std::fmt::Display,
     {
-        use std::ops::Deref;
-        {
-            let mut inner = self.rc.borrow_mut();
-
-            match (*(inner.focus_state).deref()).get() {
-                FocusState::IsFocused => {}
-                FocusState::IsBlurred => {
-                    inner.raw_and_parsed.raw_value = format!("{}", value);
-                    inner.raw_and_parsed.parsed = Ok(value);
-                }
-            }
+        let mut inner = self.rc.borrow_mut();
+        if inner.focus_state.get() == FocusState::IsBlurred {
+            inner.raw_and_parsed.raw_value = format!("{value}");
+            inner.raw_and_parsed.parsed = Ok(value);
         }
+    }
+}
+
+impl<T> std::fmt::Debug for TypedInputStorage<T>
+where
+    T: 'static + Clone + PartialEq + FromStr + std::fmt::Display + std::fmt::Debug,
+    <T as FromStr>::Err: Clone + std::fmt::Debug,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let inner = self.rc.borrow();
+        f.debug_struct("TypedInputStorage")
+            .field("raw_and_parsed", &inner.raw_and_parsed)
+            .field("focus_state", &inner.focus_state.get())
+            .finish_non_exhaustive()
     }
 }
 
@@ -209,6 +251,11 @@ enum FocusState {
     IsBlurred,
 }
 
+/// A text input whose contents are parsed as a `T`.
+///
+/// The input gets the CSS class `ranged-value-input` while its contents parse
+/// and `ranged-value-input-error` while they do not. Pressing Enter or leaving
+/// the input calls `on_send_valid` with the value if it is valid.
 pub struct TypedInput<T>
 where
     T: 'static + Clone + PartialEq + FromStr + std::fmt::Display,
@@ -217,6 +264,7 @@ where
     storage: TypedInputStorage<T>,
 }
 
+#[derive(Debug)]
 pub enum Msg {
     NewValue(String),
     OnFocus,
@@ -242,6 +290,33 @@ where
     /// Called whenever the user changes the value
     #[prop_or_default]
     pub on_input: Option<Callback<RawAndParsed<T>>>,
+}
+
+impl<T> std::fmt::Debug for TypedInput<T>
+where
+    T: 'static + Clone + PartialEq + FromStr + std::fmt::Display + std::fmt::Debug,
+    <T as FromStr>::Err: Clone + std::fmt::Debug,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("TypedInput")
+            .field("storage", &self.storage)
+            .finish()
+    }
+}
+
+impl<T> std::fmt::Debug for Props<T>
+where
+    T: 'static + Clone + PartialEq + FromStr + std::fmt::Display + std::fmt::Debug,
+    <T as FromStr>::Err: Clone + std::fmt::Debug,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Props")
+            .field("storage", &self.storage)
+            .field("placeholder", &self.placeholder)
+            .field("on_send_valid", &self.on_send_valid)
+            .field("on_input", &self.on_input)
+            .finish()
+    }
 }
 
 impl<T> TypedInput<T>

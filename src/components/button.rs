@@ -1,12 +1,18 @@
 use yew::{Callback, Component, Context, Html, Properties, classes, html};
 
+/// A button that emits `onsignal` when clicked.
+///
+/// The button gets the CSS classes `btn` and either `btn-active` or
+/// `btn-inactive`, depending on `is_active`.
+#[derive(Debug)]
 pub struct Button {}
 
+#[derive(Debug)]
 pub enum Msg {
     Clicked,
 }
 
-#[derive(PartialEq, Properties)]
+#[derive(PartialEq, Properties, Debug)]
 pub struct Props {
     #[prop_or_default]
     pub title: String,

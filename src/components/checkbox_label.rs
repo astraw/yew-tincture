@@ -1,16 +1,21 @@
 use yew::{Callback, Component, Context, Html, Properties, html};
 
+/// A checkbox followed by a `<label>` for it.
+///
+/// Emits `oncheck` with the new state whenever the user toggles the checkbox.
+#[derive(Debug)]
 pub struct CheckboxLabel {
     css_id: String,
     /// copy of state in DOM
     checked: bool,
 }
 
+#[derive(Debug)]
 pub enum Msg {
     Toggle,
 }
 
-#[derive(PartialEq, Properties)]
+#[derive(PartialEq, Properties, Debug)]
 pub struct Props {
     #[prop_or_default]
     pub label: String,
@@ -49,27 +54,18 @@ impl Component for CheckboxLabel {
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
-        // Hmm, putting this in one html!{} macro fails, so make a list
-        // manually.
-
-        // Ideally, the structure would be <label><input /></label> but
-        // I could not get this to work, so we are using `css_id` here.
-        let el1 = html! {
-            <input
-                id={self.css_id.clone()}
-                type="checkbox"
-                checked={self.checked}
-                onclick={ctx.link().callback(|_| Msg::Toggle)}
-                />
-        };
-        let el2 = html! {
-            <label for={self.css_id.clone()}>
-                {ctx.props().label.as_str()}
-            </label>
-        };
-        let mut vlist = yew::virtual_dom::vlist::VList::new();
-        vlist.add_child(el1);
-        vlist.add_child(el2);
-        vlist.into()
+        html! {
+            <>
+                <input
+                    id={self.css_id.clone()}
+                    type="checkbox"
+                    checked={self.checked}
+                    onclick={ctx.link().callback(|_| Msg::Toggle)}
+                    />
+                <label for={self.css_id.clone()}>
+                    {ctx.props().label.as_str()}
+                </label>
+            </>
+        }
     }
 }

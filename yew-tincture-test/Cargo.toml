@@ -22,3 +22,6 @@ log = "0.4.35"
 gloo-timers = "0.4.0"
 
 yew-tincture = { path = ".." }
+
+[lints]
+workspace = true

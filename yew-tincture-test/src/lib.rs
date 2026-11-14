@@ -1,3 +1,5 @@
+//! Manual test app for the `yew-tincture` components.
+
 use gloo_timers::callback::Interval;
 use wasm_bindgen::prelude::*;
 use yew::prelude::*;
@@ -38,7 +40,7 @@ impl Component for Model {
                     self.interval = Some(Interval::new(100, move || link.send_message(Msg::Tick)));
                 } else {
                     self.interval = None;
-                };
+                }
             }
             Msg::Tick => {
                 let size = self.size.get().unwrap_or(0.0) + 0.1;
@@ -62,13 +64,14 @@ impl Component for Model {
                         />
                 </label>
                 <p>{is_updating}</p>
-                <p><Button title={"Start updates"} onsignal={ctx.link().callback(|_| Msg::DoUpdates(true))} /></p>
-                <p><Button title={"Stop updates"} onsignal={ctx.link().callback(|_| Msg::DoUpdates(false))} /></p>
+                <p><Button title={"Start updates"} onsignal={ctx.link().callback(|()| Msg::DoUpdates(true))} /></p>
+                <p><Button title={"Stop updates"} onsignal={ctx.link().callback(|()| Msg::DoUpdates(false))} /></p>
             </div>
         }
     }
 }
 
+/// Entry point: mount the test app on the document body.
 #[wasm_bindgen(start)]
 pub fn run_app() {
     wasm_logger::init(wasm_logger::Config::default());

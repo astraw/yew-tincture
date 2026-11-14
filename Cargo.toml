@@ -10,6 +10,16 @@ license = "MIT OR Apache-2.0"
 [workspace.dependencies]
 yew = "0.23.0"
 
+[workspace.lints.rust]
+unsafe_code = "forbid"
+missing_debug_implementations = "warn"
+unreachable_pub = "warn"
+missing_docs = "warn"
+rust_2018_idioms = { level = "warn", priority = -1 }
+
+[workspace.lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+
 [package]
 name = "yew-tincture"
 description = "components for yew web framework"
@@ -27,3 +37,6 @@ categories = ["web-programming", "wasm", "gui"]
 yew.workspace = true
 uuid = { version = "1.29", features = ["v4", "js"] }
 web-sys = { version = "0.3.107", features = ["HtmlInputElement"] }
+
+[lints]
+workspace = true

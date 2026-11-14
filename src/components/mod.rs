@@ -1,3 +1,5 @@
+//! The components provided by this crate.
+
 mod button;
 pub use self::button::Button;
 
