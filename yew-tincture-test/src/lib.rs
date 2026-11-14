@@ -4,7 +4,7 @@ use gloo_timers::callback::Interval;
 use wasm_bindgen::prelude::*;
 use yew::prelude::*;
 
-use yew_tincture::components::{Button, TypedInput, TypedInputStorage};
+use yew_tincture::components::{Button, CheckboxLabel, TypedInput, TypedInputStorage};
 
 #[derive(Debug)]
 enum Msg {
@@ -66,6 +66,13 @@ impl Component for Model {
                 <p>{is_updating}</p>
                 <p><Button title={"Start updates"} onsignal={ctx.link().callback(|()| Msg::DoUpdates(true))} /></p>
                 <p><Button title={"Stop updates"} onsignal={ctx.link().callback(|()| Msg::DoUpdates(false))} /></p>
+                <p>
+                    <CheckboxLabel
+                        label={"Run updates"}
+                        oncheck={ctx.link().callback(Msg::DoUpdates)}
+                        updating_checked={Some(self.interval.is_some())}
+                        />
+                </p>
             </div>
         }
     }
